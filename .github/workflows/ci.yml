@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Lint and Type Check
+        # Uses your check-types and lint scripts
+        run: |
+          npm run lint
+          npm run check-types
+
+      - name: Run Tests
+        # Runs xvfb-run on Linux to provide a display for VS Code tests
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            xvfb-run -a npm test
+          else
+            npm test
+          fi
+        shell: bash
+
+      - name: Build Extension
+        # Ensures the esbuild production script runs successfully
+        run: npm run package
